@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct viemoraApp: App {
+struct RangeBarApp: App {
     @State private var store    = PositionStore()
 
     var body: some Scene {

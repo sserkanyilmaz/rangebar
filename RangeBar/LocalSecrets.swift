@@ -54,7 +54,7 @@ enum APIKeyStore {
 enum LocalConfig {
     static var appSupportDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("viemora", isDirectory: true)
+        return base.appendingPathComponent("RangeBar", isDirectory: true)
     }
 
     static var envFileURL: URL {

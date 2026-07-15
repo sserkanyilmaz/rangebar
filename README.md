@@ -1,4 +1,4 @@
-# viemora
+# RangeBar
 
 A macOS menu bar app for monitoring liquidity positions.
 
@@ -38,7 +38,7 @@ Uniswap positions use Uniswap's interface gateway. This is an internal endpoint 
 
 ## Build
 
-Open `viemora.xcodeproj` in Xcode and build the `viemora` scheme.
+Open `RangeBar.xcodeproj` in Xcode and build the `RangeBar` scheme.
 
 ## License
 

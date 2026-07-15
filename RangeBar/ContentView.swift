@@ -648,7 +648,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.title = "viemora Settings"
+        panel.title = "RangeBar Settings"
         panel.center()
         panel.isReleasedWhenClosed = false
         panel.isFloatingPanel = true
