@@ -185,6 +185,8 @@ struct Position: Identifiable {
     let bins: [BinInfo]
     let pnl: PnL
     let valueNative: Double
+    let investedValue: Double?
+    let claimedFee: Double?
 
     var activeBin: Int {
         range.count >= 3 ? range[2] : 0
@@ -210,6 +212,7 @@ struct BinInfo: Codable {
     let binYAmount: String?
     let positionXAmount: String?
     let positionYAmount: String?
+    let positionLiquidity: String?
 }
 
 struct CurrentAmounts: Codable {
@@ -270,7 +273,9 @@ struct PositionDTO: Codable {
             logo1: logo1,
             bins: bins ?? [],
             pnl: pnl ?? PnL(value: 0, percent: 0, valueNative: nil, percentNative: nil),
-            valueNative: (inputNative ?? 0) + (pnl?.valueNative ?? 0)
+            valueNative: (inputNative ?? 0) + (pnl?.valueNative ?? 0),
+            investedValue: nil,
+            claimedFee: nil
         )
     }
 }

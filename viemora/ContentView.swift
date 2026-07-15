@@ -358,6 +358,20 @@ struct PositionCard: View {
                     }
                 }
 
+                if let invested = position.investedValue {
+                    HStack(spacing: 0) {
+                        Label_("Invest")
+                        Text(formatUSD(invested))
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                        if let claimed = position.claimedFee {
+                            Text("   Claimed \(formatUSD(claimed))")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(Color(red: 1, green: 0.85, blue: 0.3).opacity(0.85))
+                        }
+                    }
+                }
+
                 // PnL
                 HStack(spacing: 0) {
                     Label_("PnL")
@@ -426,6 +440,7 @@ struct StrategyBinsView: View {
 
     // Actual number of bins in the position's range
     private var binCount: Int {
+        if !position.bins.isEmpty { return max(position.bins.count, 2) }
         let count = position.tickUpper - position.tickLower
         return max(count, 2)
     }
@@ -507,7 +522,15 @@ struct StrategyBinsView: View {
 
     // ── Height distribution per strategy ─────────────────────────
     private func computeHeights() -> [Double] {
-        let n         = binCount
+        let n = binCount
+
+        let actualLiquidity = position.bins
+            .sorted { $0.binId < $1.binId }
+            .compactMap { $0.positionLiquidity.flatMap(Double.init) }
+        if actualLiquidity.count == n, let maxLiquidity = actualLiquidity.max(), maxLiquidity > 0 {
+            return actualLiquidity.map { max(0.025, $0 / maxLiquidity) }
+        }
+
         let pct       = max(0.001, min(0.999, position.activeBinPercent))
         let activeIdx = Int((pct * Double(n - 1)).rounded())
         let strat     = position.strategyType.lowercased()

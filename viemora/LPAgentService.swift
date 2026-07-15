@@ -92,13 +92,37 @@ class PositionStore {
             do {
                 switch wallet.resolvedNetwork {
                 case .solana:
-                    positionsByWallet[wallet.id] = try await LPAgentService.shared.fetchOpenPositions(owner: wallet.address)
-                    uniswapPositionsByWallet.removeValue(forKey: wallet.id)
+                    var merged: [String: Position] = [:]
+                    var sourceSucceeded = false
+
+                    do {
+                        let lpAgent = try await LPAgentService.shared.fetchOpenPositions(owner: wallet.address)
+                        for position in lpAgent { merged[position.id] = position }
+                        sourceSucceeded = true
+                    } catch {
+                        errors.append("\(wallet.displayName) LPAgent: \(error.localizedDescription)")
+                    }
+
+                    do {
+                        let hawksight = try await HawksightService.shared.fetchOpenPositions(owner: wallet.address)
+                        // Hawksight wins duplicate IDs because it carries real bin distribution
+                        // and deposit/claimed-fee based economic PnL.
+                        for position in hawksight { merged[position.id] = position }
+                        sourceSucceeded = true
+                    } catch {
+                        errors.append("\(wallet.displayName) Hawksight: \(error.localizedDescription)")
+                    }
+
+                    if sourceSucceeded {
+                        positionsByWallet[wallet.id] = Array(merged.values)
+                        uniswapPositionsByWallet.removeValue(forKey: wallet.id)
+                        completedRequest = true
+                    }
                 case .evm:
                     uniswapPositionsByWallet[wallet.id] = try await UniswapService.shared.fetchPositions(owner: wallet.address)
                     positionsByWallet.removeValue(forKey: wallet.id)
+                    completedRequest = true
                 }
-                completedRequest = true
             } catch {
                 errors.append("\(wallet.displayName): \(error.localizedDescription)")
             }
