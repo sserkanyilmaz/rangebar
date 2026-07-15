@@ -197,6 +197,7 @@ struct Position: Identifiable {
     let valueNative: Double
     let investedValue: Double?
     let claimedFee: Double?
+    let externalURL: String?
 
     var activeBin: Int {
         range.count >= 3 ? range[2] : 0
@@ -285,7 +286,8 @@ struct PositionDTO: Codable {
             pnl: pnl ?? PnL(value: 0, percent: 0, valueNative: nil, percentNative: nil),
             valueNative: (inputNative ?? 0) + (pnl?.valueNative ?? 0),
             investedValue: nil,
-            claimedFee: nil
+            claimedFee: nil,
+            externalURL: nil
         )
     }
 }

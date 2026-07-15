@@ -126,7 +126,8 @@ private struct HawksightOpenPosition: Decodable {
             ),
             valueNative: solPrice > 0 ? currentValue / solPrice : 0,
             investedValue: analytics?.metrics == nil ? nil : invested,
-            claimedFee: analytics?.metrics == nil ? nil : claimed
+            claimedFee: analytics?.metrics == nil ? nil : claimed,
+            externalURL: "https://www.hawkfi.ag/meteora/\(poolAddress)"
         )
     }
 

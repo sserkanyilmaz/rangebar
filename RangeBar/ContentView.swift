@@ -267,7 +267,9 @@ struct PositionCard: View {
                     .frame(width: 7, height: 7)
 
                 Button {
-                    if let url = URL(string: "\(meteoraBase)/\(position.pool)?referrer=portfolio") {
+                    let destination = position.externalURL
+                        ?? "\(meteoraBase)/\(position.pool)?referrer=portfolio"
+                    if let url = URL(string: destination) {
                         NSWorkspace.shared.open(url)
                     }
                 } label: {
