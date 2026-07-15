@@ -11,6 +11,23 @@ A macOS menu bar app for monitoring liquidity positions.
 - Direct links to Uniswap position pages
 - Automatic refresh
 
+## Supported platforms and protocols
+
+### Solana
+
+- **Meteora DLMM** positions
+- **LPAgent** for position values, fees, PnL, and strategy data
+- **Hawksight / HawkFi** for additional positions, real bin distributions, token metadata, claimed fees, invested capital, and economic PnL
+- LPAgent and Hawksight results are merged and deduplicated by position address
+
+### EVM
+
+- **Uniswap V3** positions
+- **Uniswap V4** positions
+- Configured chain mappings: Ethereum, Unichain, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, Celo, Linea, zkSync, World Chain, Zora, Blast, and Robinhood Chain
+- **DexScreener** enrichment, when available for the chain and pool, for current market cap and estimated lower/current/upper market-cap ranges
+- Direct links to position pages on the Uniswap app
+
 ## Local configuration
 
 Wallets are stored locally in `UserDefaults`.

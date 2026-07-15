@@ -123,7 +123,7 @@ struct UniswapPosition: Identifiable {
     }
 
     var appURL: URL? {
-        guard let chain = UniswapChain.slug(for: chainId) else { return nil }
+        guard let chain = UniswapChain.appSlug(for: chainId) else { return nil }
         let version: String
         switch protocolVersion {
         case "PROTOCOL_VERSION_V3": version = "v3"
@@ -150,14 +150,24 @@ struct UniswapToken: Codable {
 }
 
 enum UniswapChain {
-    static func slug(for chainId: Int) -> String? {
-        [
-            1: "ethereum", 10: "optimism", 56: "bnb", 130: "unichain",
-            137: "polygon", 324: "zksync", 480: "worldchain", 4663: "robinhood",
-            8453: "base", 42161: "arbitrum", 42220: "celo", 43114: "avalanche",
-            59144: "linea", 7777777: "zora", 81457: "blast"
-        ][chainId]
+    static func appSlug(for chainId: Int) -> String? {
+        slugs[chainId]?.app
     }
+
+    static func dexScreenerSlug(for chainId: Int) -> String? {
+        slugs[chainId]?.dexScreener
+    }
+
+    private static let slugs: [Int: (app: String, dexScreener: String)] = [
+        1: ("ethereum", "ethereum"), 10: ("optimism", "optimism"),
+        56: ("bnb", "bsc"), 130: ("unichain", "unichain"),
+        137: ("polygon", "polygon"), 324: ("zksync", "zksync"),
+        480: ("worldchain", "worldchain"), 4663: ("robinhood", "robinhood"),
+        8453: ("base", "base"), 42161: ("arbitrum", "arbitrum"),
+        42220: ("celo", "celo"), 43114: ("avalanche", "avalanche"),
+        59144: ("linea", "linea"), 7777777: ("zora", "zora"),
+        81457: ("blast", "blast")
+    ]
 }
 
 struct Position: Identifiable {

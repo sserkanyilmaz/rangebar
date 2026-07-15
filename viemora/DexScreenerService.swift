@@ -14,7 +14,7 @@ final class DexScreenerService {
     private let cacheLifetime: TimeInterval = 55
 
     func marketData(chainId: Int, poolId: String) async throws -> UniswapMarketData? {
-        guard let chain = UniswapChain.slug(for: chainId) else { return nil }
+        guard let chain = UniswapChain.dexScreenerSlug(for: chainId) else { return nil }
         let key = "\(chain):\(poolId.lowercased())"
 
         if let cached = cache[key], Date().timeIntervalSince(cached.date) < cacheLifetime {
