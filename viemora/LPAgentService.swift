@@ -85,23 +85,29 @@ class PositionStore {
     func refresh() async {
         isLoading = true
         errorMessage = nil
-        do {
-            var nextSolana: [UUID: [Position]] = [:]
-            var nextEVM: [UUID: [UniswapPosition]] = [:]
-            for wallet in wallets where !wallet.address.isEmpty {
+        var errors: [String] = []
+        var completedRequest = false
+
+        for wallet in wallets where !wallet.address.isEmpty {
+            do {
                 switch wallet.resolvedNetwork {
                 case .solana:
-                    nextSolana[wallet.id] = try await LPAgentService.shared.fetchOpenPositions(owner: wallet.address)
+                    positionsByWallet[wallet.id] = try await LPAgentService.shared.fetchOpenPositions(owner: wallet.address)
+                    uniswapPositionsByWallet.removeValue(forKey: wallet.id)
                 case .evm:
-                    nextEVM[wallet.id] = try await UniswapService.shared.fetchPositions(owner: wallet.address)
+                    uniswapPositionsByWallet[wallet.id] = try await UniswapService.shared.fetchPositions(owner: wallet.address)
+                    positionsByWallet.removeValue(forKey: wallet.id)
                 }
+                completedRequest = true
+            } catch {
+                errors.append("\(wallet.displayName): \(error.localizedDescription)")
             }
-            positionsByWallet = nextSolana
-            uniswapPositionsByWallet = nextEVM
-            lastUpdated = Date()
-        } catch {
-            errorMessage = error.localizedDescription
         }
+
+        if completedRequest || wallets.isEmpty {
+            lastUpdated = Date()
+        }
+        errorMessage = errors.isEmpty ? nil : errors.joined(separator: " · ")
         isLoading = false
     }
 

@@ -7,6 +7,25 @@ final class UniswapService {
     private let chainIds = [1, 130, 8453, 42161, 4663, 4217, 143, 137, 196, 10, 56, 43114, 59144, 480, 324, 4326, 1868, 7777777, 42220, 81457]
 
     func fetchPositions(owner: String) async throws -> [UniswapPosition] {
+        var result: [UniswapPosition] = []
+        var pageToken: String?
+        var visitedTokens = Set<String>()
+
+        repeat {
+            let page = try await fetchPage(owner: owner, pageToken: pageToken)
+            result.append(contentsOf: page.positions.compactMap { $0.toPosition() })
+
+            guard let next = page.nextPageToken, !next.isEmpty, visitedTokens.insert(next).inserted else {
+                pageToken = nil
+                break
+            }
+            pageToken = next
+        } while visitedTokens.count < 20
+
+        return Array(Dictionary(grouping: result, by: \.id).compactMap { $0.value.first })
+    }
+
+    private func fetchPage(owner: String, pageToken: String?) async throws -> UniswapPositionsResponse {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
@@ -16,19 +35,18 @@ final class UniswapService {
         request.httpBody = try JSONEncoder().encode(UniswapPositionsRequest(
             address: owner,
             chainIds: chainIds,
-            protocolVersions: ["PROTOCOL_VERSION_V4", "PROTOCOL_VERSION_V3", "PROTOCOL_VERSION_V2"],
+            protocolVersions: ["PROTOCOL_VERSION_V4", "PROTOCOL_VERSION_V3"],
             positionStatuses: ["POSITION_STATUS_IN_RANGE", "POSITION_STATUS_OUT_OF_RANGE"],
             pageSize: 25,
-            includeHidden: true
+            includeHidden: true,
+            pageToken: pageToken
         ))
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw UniswapServiceError.badResponse((response as? HTTPURLResponse)?.statusCode)
         }
-
-        let decoded = try JSONDecoder().decode(UniswapPositionsResponse.self, from: data)
-        return decoded.positions.compactMap { $0.toPosition() }
+        return try JSONDecoder().decode(UniswapPositionsResponse.self, from: data)
     }
 }
 
@@ -39,10 +57,22 @@ private struct UniswapPositionsRequest: Encodable {
     let positionStatuses: [String]
     let pageSize: Int
     let includeHidden: Bool
+    let pageToken: String?
 }
 
 private struct UniswapPositionsResponse: Decodable {
     let positions: [UniswapPositionDTO]
+    let nextPageToken: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case positions, nextPageToken
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        positions = try container.decodeIfPresent([UniswapPositionDTO].self, forKey: .positions) ?? []
+        nextPageToken = try container.decodeIfPresent(String.self, forKey: .nextPageToken)
+    }
 }
 
 private struct UniswapPositionDTO: Decodable {
