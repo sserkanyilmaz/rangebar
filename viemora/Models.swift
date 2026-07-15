@@ -61,6 +61,7 @@ struct UniswapPosition: Identifiable {
     let chainId: Int
     let protocolVersion: String
     let tokenId: String
+    let poolId: String
     let token0: UniswapToken
     let token1: UniswapToken
     let tickLower: Int
@@ -74,10 +75,52 @@ struct UniswapPosition: Identifiable {
     let uncollectedFeesUsd: Double
     let apr: Double?
     let status: String
+    let marketData: UniswapMarketData?
 
     var id: String { "\(chainId)-\(protocolVersion)-\(tokenId)" }
     var pairName: String { "\(token0.symbol)/\(token1.symbol)" }
     var inRange: Bool { status == "POSITION_STATUS_IN_RANGE" }
+
+    var currentRangePercent: Double {
+        guard tickUpper > tickLower else { return 0.5 }
+        return Double(currentTick - tickLower) / Double(tickUpper - tickLower)
+    }
+
+    var marketCapRangePercent: Double {
+        guard let marketData else { return currentRangePercent }
+        return marketData.baseTokenAddress.lowercased() == token1.address.lowercased()
+            ? 1 - currentRangePercent
+            : currentRangePercent
+    }
+
+    var marketCapRange: (lower: Double, current: Double, upper: Double)? {
+        guard let marketData, marketData.marketCap > 0 else { return nil }
+        let base = marketData.baseTokenAddress.lowercased()
+        let direction: Double
+        if base == token0.address.lowercased() {
+            direction = 1
+        } else if base == token1.address.lowercased() {
+            direction = -1
+        } else {
+            return nil
+        }
+
+        let lowerRatio = pow(1.0001, Double(tickLower - currentTick) * direction)
+        let upperRatio = pow(1.0001, Double(tickUpper - currentTick) * direction)
+        let a = marketData.marketCap * lowerRatio
+        let b = marketData.marketCap * upperRatio
+        return (min(a, b), marketData.marketCap, max(a, b))
+    }
+
+    func withMarketData(_ data: UniswapMarketData?) -> UniswapPosition {
+        UniswapPosition(
+            chainId: chainId, protocolVersion: protocolVersion, tokenId: tokenId, poolId: poolId,
+            token0: token0, token1: token1, tickLower: tickLower, tickUpper: tickUpper,
+            currentTick: currentTick, amount0: amount0, amount1: amount1,
+            feeAmount0: feeAmount0, feeAmount1: feeAmount1, valueUsd: valueUsd,
+            uncollectedFeesUsd: uncollectedFeesUsd, apr: apr, status: status, marketData: data
+        )
+    }
 
     var appURL: URL? {
         guard let chain = UniswapChain.slug(for: chainId) else { return nil }
@@ -89,6 +132,13 @@ struct UniswapPosition: Identifiable {
         }
         return URL(string: "https://app.uniswap.org/positions/\(version)/\(chain)/\(tokenId)")
     }
+}
+
+struct UniswapMarketData {
+    let baseTokenAddress: String
+    let marketCap: Double
+    let priceUsd: Double?
+    let liquidityUsd: Double?
 }
 
 struct UniswapToken: Codable {

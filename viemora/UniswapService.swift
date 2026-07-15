@@ -22,7 +22,16 @@ final class UniswapService {
             pageToken = next
         } while visitedTokens.count < 20
 
-        return Array(Dictionary(grouping: result, by: \.id).compactMap { $0.value.first })
+        let unique = Array(Dictionary(grouping: result, by: \.id).compactMap { $0.value.first })
+        var enriched: [UniswapPosition] = []
+        for position in unique {
+            let marketData = try? await DexScreenerService.shared.marketData(
+                chainId: position.chainId,
+                poolId: position.poolId
+            )
+            enriched.append(position.withMarketData(marketData))
+        }
+        return enriched
     }
 
     private func fetchPage(owner: String, pageToken: String?) async throws -> UniswapPositionsResponse {
@@ -90,6 +99,7 @@ private struct UniswapPositionDTO: Decodable {
             chainId: chainId,
             protocolVersion: protocolVersion,
             tokenId: position.tokenId,
+            poolId: position.poolId,
             token0: position.token0,
             token1: position.token1,
             tickLower: Int(position.tickLower) ?? 0,
@@ -102,7 +112,8 @@ private struct UniswapPositionDTO: Decodable {
             valueUsd: valueUsd ?? 0,
             uncollectedFeesUsd: uncollectedFeesUsd ?? 0,
             apr: position.apr,
-            status: status
+            status: status,
+            marketData: nil
         )
     }
 
@@ -118,6 +129,7 @@ private struct UniswapV4PositionDTO: Decodable {
 
 private struct UniswapPoolPositionDTO: Decodable {
     let tokenId: String
+    let poolId: String
     let tickLower: String
     let tickUpper: String
     let currentTick: String

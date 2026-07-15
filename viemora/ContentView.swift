@@ -162,6 +162,9 @@ struct UniswapPositionCard: View {
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
+
+            Divider().opacity(0.3)
+            UniswapMarketCapRangeView(position: position)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -170,6 +173,60 @@ struct UniswapPositionCard: View {
                 .fill(Color.primary.opacity(0.04))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08)))
         )
+    }
+}
+
+struct UniswapMarketCapRangeView: View {
+    let position: UniswapPosition
+
+    private var markerColor: Color { position.inRange ? .green : .red }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if let range = position.marketCapRange {
+                HStack {
+                    Text(formatCompactUSD(range.lower))
+                    Spacer()
+                    Text("MCAP \(formatCompactUSD(range.current))")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(formatCompactUSD(range.upper))
+                }
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundStyle(.secondary)
+            }
+
+            GeometryReader { proxy in
+                let raw = position.marketCapRangePercent
+                let markerX = min(max(raw, 0), 1) * proxy.size.width
+
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.18))
+                        .frame(height: 8)
+                    Capsule()
+                        .fill(Color.green.opacity(position.inRange ? 0.55 : 0.25))
+                        .frame(height: 8)
+                    Rectangle()
+                        .fill(markerColor)
+                        .frame(width: 2, height: 18)
+                        .offset(x: markerX - 1)
+                }
+                .frame(maxHeight: .infinity, alignment: .center)
+            }
+            .frame(height: 18)
+
+            HStack {
+                Text("LOWER")
+                Spacer()
+                Text(position.inRange ? "IN RANGE" : "OUT OF RANGE")
+                    .foregroundStyle(markerColor)
+                Spacer()
+                Text("UPPER")
+            }
+            .font(.system(size: 8, weight: .semibold))
+            .foregroundStyle(.tertiary)
+        }
     }
 }
 
@@ -740,6 +797,14 @@ private func formatUSD(_ value: Double) -> String {
     if abs(value) >= 100   { return String(format: "$%.2f", value) }
     if abs(value) >= 1     { return String(format: "$%.2f", value) }
     return String(format: "$%.4f", value)
+}
+
+private func formatCompactUSD(_ value: Double) -> String {
+    let magnitude = abs(value)
+    if magnitude >= 1_000_000_000 { return String(format: "$%.2fB", value / 1_000_000_000) }
+    if magnitude >= 1_000_000 { return String(format: "$%.2fM", value / 1_000_000) }
+    if magnitude >= 1_000 { return String(format: "$%.1fK", value / 1_000) }
+    return formatUSD(value)
 }
 
 private func formatSOL(_ value: Double) -> String {
